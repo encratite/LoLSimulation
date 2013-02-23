@@ -31,15 +31,41 @@ namespace LoLSimulation
 			DetermineItemConfigurations(level, goldLimit, initialConfiguration, configurations);
 		}
 
+		int GetGoldAvailable(int level, int goldLimit, List<Item> currentConfiguration)
+		{
+			int goldAvailable = goldLimit;
+			// Machete
+			goldAvailable -= 300;
+			// Boots
+			goldAvailable -= 350;
+			// Health pots
+			goldAvailable -= 8 * 35;
+			// Wards
+			int wardCount;
+			if (level >= 18)
+				wardCount = 4;
+			else if (level >= 15)
+				wardCount = 3;
+			else if (level >= 12)
+				wardCount = 2;
+			else if (level >= 9)
+				wardCount = 1;
+			else
+				wardCount = 0;
+			goldAvailable -= wardCount * 75;
+			foreach (var item in currentConfiguration)
+				goldAvailable -= item.Gold;
+			return goldAvailable;
+		}
+
 		void DetermineItemConfigurations(int level, int goldLimit, List<Item> currentConfiguration, List<ItemConfiguration> configurations)
 		{
 			const int itemCountLimit = 6;
+			int slotsUsed = level < 15 ? 3 : 2;
 			bool foundValidConfiguration = false;
-			if (currentConfiguration.Count < itemCountLimit)
+			if (currentConfiguration.Count + slotsUsed < itemCountLimit)
 			{
-				int goldAvailable = goldLimit;
-				foreach(var item in currentConfiguration)
-					goldAvailable -= item.Gold;
+				int goldAvailable = GetGoldAvailable(level, goldLimit, currentConfiguration);
 				foreach (var item in Items)
 				{
 					if (
