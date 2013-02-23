@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 
 namespace LoLSimulation
 {
@@ -16,7 +17,7 @@ namespace LoLSimulation
 		public ItemConfiguration(List<Item> items)
 		{
 			Items = new List<Item>(items);
-			Items.Sort((Item x, Item y) => x.Gold.CompareTo(y.Gold));
+			Items.Sort((Item x, Item y) => x.Name.CompareTo(y.Name));
 			int gold = 0;
 			int armour = 0;
 			int magicResistance = 0;
@@ -28,7 +29,6 @@ namespace LoLSimulation
 				magicResistance += item.MagicResistance;
 				health += item.Health;
 			}
-			Items = items;
 			Gold = gold;
 			Armour = armour;
 			MagicResistance = magicResistance;
@@ -41,10 +41,30 @@ namespace LoLSimulation
 				return false;
 			for (int i = 0; i < Items.Count; i++)
 			{
-				if (object.ReferenceEquals(Items[i], configuration.Items[i]))
+				if (!object.ReferenceEquals(Items[i], configuration.Items[i]))
 					return false;
 			}
 			return true;
+		}
+
+		public double GetScore(double physicalDamageRatio)
+		{
+			return EffectiveHealthAgainstPhysicalDamage * physicalDamageRatio + EffectiveHealthAgainstMagicDamage * (1.0 - physicalDamageRatio);
+		}
+
+		public void Serialise(StreamWriter writer, double physicalDamageRatio)
+		{
+			bool first = true;
+			foreach (var item in Items)
+			{
+				if (first)
+					first = false;
+				else
+					writer.Write(", ");
+				writer.Write(item.Name);
+			}
+			writer.Write("\n");
+			writer.Write("{0} g, {1} armour, {2} MR, {3} health, {4} EH vs. physical, {5} EH vs. magic, {6} score\n", Gold, Armour, MagicResistance, Health, EffectiveHealthAgainstPhysicalDamage, EffectiveHealthAgainstMagicDamage, GetScore(physicalDamageRatio));
 		}
 	}
 }

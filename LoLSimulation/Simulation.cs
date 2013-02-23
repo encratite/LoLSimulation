@@ -1,45 +1,68 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace LoLSimulation
 {
 	class Simulation
 	{
 		List<Item> Items;
+		Item Machete;
+		Item Boots;
+		Item NinjaTabi;
+		Item MercurysTreads;
 
 		public Simulation(List<Item> items)
 		{
 			Items = items;
+			Machete = new Item("Machete", 300);
+			Boots = new Item("Boots", 300);
+			NinjaTabi = new Item("Ninja Tabi", 1000, armour: 25);
+			MercurysTreads = new Item("Mercury's Treads", 1200, magicResistance: 25);
 		}
 
-		public void Run()
+		public void Run(string description, string logFile, double physicalDamageRatio)
 		{
-			int[] levels = new int[] { 9, 12, 15, 18 };
-			int[] goldLimits = new int[] { 5000, 6500, 9500, 12500 };
-			for (int i = 0; i < levels.Length && i < goldLimits.Length; i++)
+			using (FileStream stream = new FileStream(logFile, FileMode.Truncate))
 			{
-				int level = levels[i];
-				int goldLimit = goldLimits[i];
-				EvaluateSetting(level, goldLimit);
+				StreamWriter writer = new StreamWriter(stream);
+				writer.Write("Profile: {0}, physical damage ratio {1}\n\n", description, physicalDamageRatio);
+				int[] levels = new int[] { 9, 12, 15, 18 };
+				int[] goldLimits = new int[] { 5000, 6500, 9500, 12500 };
+				for (int i = 0; i < levels.Length && i < goldLimits.Length; i++)
+				{
+					int level = levels[i];
+					int goldLimit = goldLimits[i];
+					EvaluateSetting(writer, level, goldLimit, physicalDamageRatio);
+				}
 			}
 		}
 
-		void EvaluateSetting(int level, int goldLimit)
+		void EvaluateSetting(StreamWriter writer, int level, int goldLimit, double physicalDamageRatio)
 		{
-			Console.WriteLine("Evaluating level {0}, gold limit {1}", level, goldLimit);
-			List<Item> initialConfiguration = new List<Item>();
+			List<Item> initialItems = new List<Item>();
+			initialItems.Add(Machete);
+			if (level < 12)
+				initialItems.Add(Boots);
+			else
+			{
+				if (physicalDamageRatio >= 0.8)
+					initialItems.Add(NinjaTabi);
+				else
+					initialItems.Add(MercurysTreads);
+			}
 			List<ItemConfiguration> configurations = new List<ItemConfiguration>();
-			DetermineItemConfigurations(level, goldLimit, initialConfiguration, configurations);
-			Console.WriteLine("Number of configurations: {0}", configurations.Count);
+			DetermineItemConfigurations(level, goldLimit, physicalDamageRatio, initialItems, configurations);
+			configurations.Sort((ItemConfiguration x, ItemConfiguration y) => y.GetScore(physicalDamageRatio).CompareTo(x.GetScore(physicalDamageRatio)));
+			writer.Write("Level {0}, gold limit {1}, {2} item configurations\n\n", level, goldLimit, configurations.Count);
+			foreach (var configuration in configurations)
+				configuration.Serialise(writer, physicalDamageRatio);
+			writer.Write("\n");
 		}
 
 		int GetGoldAvailable(int level, int goldLimit, List<Item> currentConfiguration)
 		{
 			int goldAvailable = goldLimit;
-			// Machete
-			goldAvailable -= 300;
-			// Boots
-			goldAvailable -= 350;
 			// Health pots
 			goldAvailable -= 8 * 35;
 			// Wards
@@ -60,12 +83,12 @@ namespace LoLSimulation
 			return goldAvailable;
 		}
 
-		void DetermineItemConfigurations(int level, int goldLimit, List<Item> currentConfiguration, List<ItemConfiguration> configurations)
+		void DetermineItemConfigurations(int level, int goldLimit, double physicalDamageRatio, List<Item> currentConfiguration, List<ItemConfiguration> configurations)
 		{
-			const int itemCountLimit = 6;
-			int slotsUsed = level < 15 ? 3 : 2;
+			const int inventoryLimit = 6;
+			int slotsUsed = level < 15 ? 2 : 1;
 			bool foundValidConfiguration = false;
-			if (currentConfiguration.Count + slotsUsed < itemCountLimit)
+			if (currentConfiguration.Count + slotsUsed < inventoryLimit)
 			{
 				int goldAvailable = GetGoldAvailable(level, goldLimit, currentConfiguration);
 				foreach (var item in Items)
@@ -78,7 +101,7 @@ namespace LoLSimulation
 					List<Item> newConfiguration = new List<Item>(currentConfiguration);
 					newConfiguration.Add(item);
 					foundValidConfiguration = true;
-					DetermineItemConfigurations(level, goldLimit, newConfiguration, configurations);
+					DetermineItemConfigurations(level, goldLimit, physicalDamageRatio, newConfiguration, configurations);
 				}
 			}
 			if (!foundValidConfiguration)
