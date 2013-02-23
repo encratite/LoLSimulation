@@ -23,7 +23,7 @@ namespace LoLSimulation
 
 		public void Run(string description, string logFile, double physicalDamageRatio)
 		{
-			using (FileStream stream = new FileStream(logFile, FileMode.Truncate))
+			using (FileStream stream = new FileStream(logFile, FileMode.Create))
 			{
 				StreamWriter writer = new StreamWriter(stream);
 				writer.Write("Profile: {0}, physical damage ratio {1}\n\n", description, physicalDamageRatio);
@@ -41,7 +41,8 @@ namespace LoLSimulation
 		void EvaluateSetting(StreamWriter writer, int level, int goldLimit, double physicalDamageRatio)
 		{
 			List<Item> initialItems = new List<Item>();
-			initialItems.Add(Machete);
+			if(level <= 12)
+				initialItems.Add(Machete);
 			if (level < 12)
 				initialItems.Add(Boots);
 			else
@@ -65,9 +66,12 @@ namespace LoLSimulation
 			int goldAvailable = goldLimit;
 			// Health pots
 			goldAvailable -= 8 * 35;
+			// Sold Machete
+			if (level >= 15)
+				goldAvailable -= Machete.Gold;
 			// Wards
 			int wardCount;
-			if (level >= 18)
+			if (level == 18)
 				wardCount = 4;
 			else if (level >= 15)
 				wardCount = 3;
@@ -86,9 +90,15 @@ namespace LoLSimulation
 		void DetermineItemConfigurations(int level, int goldLimit, double physicalDamageRatio, List<Item> currentConfiguration, List<ItemConfiguration> configurations)
 		{
 			const int inventoryLimit = 6;
-			int slotsUsed = level < 15 ? 2 : 1;
+			int slotsUsedByPotsAndWards;
+			if (level == 18)
+				slotsUsedByPotsAndWards = 0;
+			else if (level >= 12)
+				slotsUsedByPotsAndWards = 1;
+			else
+				slotsUsedByPotsAndWards = 2;
 			bool foundValidConfiguration = false;
-			if (currentConfiguration.Count + slotsUsed < inventoryLimit)
+			if (currentConfiguration.Count + slotsUsedByPotsAndWards < inventoryLimit)
 			{
 				int goldAvailable = GetGoldAvailable(level, goldLimit, currentConfiguration);
 				foreach (var item in Items)

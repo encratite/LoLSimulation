@@ -23,9 +23,9 @@ namespace LoLSimulation
 			items.Add(new Item("Spirit Visage", 2200, magicResistance: 50, health: 200));
 
 			Simulation simulation = new Simulation(items);
-			simulation.Run("Balanced", "Balanced.log", 0.65);
-			simulation.Run("Physical only", "Physical.log", 1.0);
-			simulation.Run("Magical only", "Magical.log", 0.0);
+			simulation.Run("Balanced", "Balanced.txt", 0.65);
+			simulation.Run("Physical only", "Physical.txt", 1.0);
+			simulation.Run("Magical only", "Magical.txt", 0.0);
 		}
 	}
 }
