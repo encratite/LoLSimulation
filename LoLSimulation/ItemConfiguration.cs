@@ -15,6 +15,8 @@ namespace LoLSimulation
 
 		public ItemConfiguration(List<Item> items)
 		{
+			Items = new List<Item>(items);
+			Items.Sort((Item x, Item y) => x.Gold.CompareTo(y.Gold));
 			int gold = 0;
 			int armour = 0;
 			int magicResistance = 0;
@@ -31,6 +33,18 @@ namespace LoLSimulation
 			Armour = armour;
 			MagicResistance = magicResistance;
 			Health = health;
+		}
+
+		public bool HasSameItems(ItemConfiguration configuration)
+		{
+			if (Items.Count != configuration.Items.Count)
+				return false;
+			for (int i = 0; i < Items.Count; i++)
+			{
+				if (object.ReferenceEquals(Items[i], configuration.Items[i]))
+					return false;
+			}
+			return true;
 		}
 	}
 }

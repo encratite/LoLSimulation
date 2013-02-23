@@ -23,6 +23,7 @@ namespace LoLSimulation
 			items.Add(new Item("Spirit Visage", 2200, magicResistance: 50, health: 200));
 
 			Simulation simulation = new Simulation(items);
+			simulation.Run();
 		}
 	}
 }

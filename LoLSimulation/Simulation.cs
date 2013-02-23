@@ -26,9 +26,11 @@ namespace LoLSimulation
 
 		void EvaluateSetting(int level, int goldLimit)
 		{
+			Console.WriteLine("Evaluating level {0}, gold limit {1}", level, goldLimit);
 			List<Item> initialConfiguration = new List<Item>();
 			List<ItemConfiguration> configurations = new List<ItemConfiguration>();
 			DetermineItemConfigurations(level, goldLimit, initialConfiguration, configurations);
+			Console.WriteLine("Number of configurations: {0}", configurations.Count);
 		}
 
 		int GetGoldAvailable(int level, int goldLimit, List<Item> currentConfiguration)
@@ -81,8 +83,18 @@ namespace LoLSimulation
 			}
 			if (!foundValidConfiguration)
 			{
-				ItemConfiguration configuration = GetItemConfiguration(level, currentConfiguration);
-				configurations.Add(configuration);
+				bool isNew = true;
+				ItemConfiguration newConfiguration = GetItemConfiguration(level, currentConfiguration);
+				foreach (var configuration in configurations)
+				{
+					if (configuration.HasSameItems(newConfiguration))
+					{
+						isNew = false;
+						break;
+					}
+				}
+				if(isNew)
+					configurations.Add(newConfiguration);
 			}
 		}
 
