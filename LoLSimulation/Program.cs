@@ -21,6 +21,7 @@ namespace LoLSimulation
 			items.Add(new Item("Sunfire Cape", 2650 , armour: 45, health: 450));
 			items.Add(new Item("Randuin's Omen", 3100, armour: 70, health: 500));
 			items.Add(new Item("Spirit Visage", 2200, magicResistance: 50, health: 200));
+			items.Add(new Item("Runic Bulwark", 3200, armour: 30, magicResistance: 60, health: 400));
 
 			Simulation simulation = new Simulation(items);
 			simulation.Run("Balanced", "Balanced.txt", 0.65);
