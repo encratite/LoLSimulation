@@ -27,8 +27,8 @@ namespace LoLSimulation
 			{
 				StreamWriter writer = new StreamWriter(stream);
 				writer.Write("Profile: {0}, physical damage ratio {1}\n\n", description, physicalDamageRatio);
-				int[] levels = new int[] { 9, 12, 15, 18 };
-				int[] goldLimits = new int[] { 5000, 6500, 9500, 12500 };
+				int[] levels = new int[] { 6, 9, 12, 15, 18 };
+				int[] goldLimits = new int[] { 3500, 5000, 6500, 9500, 12500 };
 				for (int i = 0; i < levels.Length && i < goldLimits.Length; i++)
 				{
 					int level = levels[i];
@@ -43,15 +43,15 @@ namespace LoLSimulation
 			List<Item> initialItems = new List<Item>();
 			if(level <= 12)
 				initialItems.Add(Machete);
-			if (level < 12)
-				initialItems.Add(Boots);
-			else
+			if (level >= 12)
 			{
 				if (physicalDamageRatio >= 0.8)
 					initialItems.Add(NinjaTabi);
 				else
 					initialItems.Add(MercurysTreads);
 			}
+			else
+				initialItems.Add(Boots);
 			List<ItemConfiguration> configurations = new List<ItemConfiguration>();
 			DetermineItemConfigurations(level, goldLimit, physicalDamageRatio, initialItems, configurations);
 			configurations.Sort((ItemConfiguration x, ItemConfiguration y) => y.GetScore(physicalDamageRatio).CompareTo(x.GetScore(physicalDamageRatio)));
