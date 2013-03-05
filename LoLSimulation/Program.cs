@@ -24,6 +24,10 @@ namespace LoLSimulation
 			items.Add(new Item("Runic Bulwark", 3200, armour: 30, magicResistance: 60, health: 400));
 			items.Add(new Item("Locket of the Iron Solari", 2000, armour: 35, health: 400));
 
+			items.Add(new Item("Frozen Mallet", 2000, health: 700));
+			items.Add(new Item("Iceborn Gauntlet", 3250, armour: 60));
+			items.Add(new Item("Atma's Impaler", 2300, armour: 45));
+
 			Simulation simulation = new Simulation(items);
 			simulation.Run("Balanced", "Balanced.txt", 0.65);
 			simulation.Run("Physical only", "Physical.txt", 1.0);

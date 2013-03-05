@@ -6,6 +6,8 @@ namespace LoLSimulation
 {
 	class Simulation
 	{
+		const bool GoldMode = false;
+
 		List<Item> Items;
 		Item Machete;
 		Item Boots;
@@ -27,21 +29,20 @@ namespace LoLSimulation
 			{
 				StreamWriter writer = new StreamWriter(stream);
 				writer.Write("Profile: {0}, physical damage ratio {1}\n\n", description, physicalDamageRatio);
-				int[] levels = new int[] { 6, 9, 12, 15, 18 };
-				int[] goldLimits = new int[] { 3500, 5000, 6500, 9500, 12500 };
+				// int[] levels = new int[] { 6, 9, 12, 15, 18 };
+				// int[] goldLimits = new int[] { 2000  /* realistic */, 5000, 6100 /* realistic */, 9500, 12500 };
+				int[] levels = new int[] { 9, 12, 15, 18 };
+				int[] goldLimits = new int[] { 5000, 6100 /* realistic */, 9500, 12500 };
+				int[] itemLimits = new int[] { 2, 3, 4, 5 };
 				for (int i = 0; i < levels.Length && i < goldLimits.Length; i++)
-				{
-					int level = levels[i];
-					int goldLimit = goldLimits[i];
-					EvaluateSetting(writer, level, goldLimit, physicalDamageRatio);
-				}
+					EvaluateSetting(writer, levels[i], goldLimits[i], itemLimits[i], physicalDamageRatio);
 			}
 		}
 
-		void EvaluateSetting(StreamWriter writer, int level, int goldLimit, double physicalDamageRatio)
+		void EvaluateSetting(StreamWriter writer, int level, int goldLimit, int itemLimit, double physicalDamageRatio)
 		{
 			List<Item> initialItems = new List<Item>();
-			if(level <= 12)
+			if(GoldMode && level <= 12)
 				initialItems.Add(Machete);
 			if (level >= 12)
 			{
@@ -53,9 +54,12 @@ namespace LoLSimulation
 			else
 				initialItems.Add(Boots);
 			List<ItemConfiguration> configurations = new List<ItemConfiguration>();
-			DetermineItemConfigurations(level, goldLimit, physicalDamageRatio, initialItems, configurations);
+			DetermineItemConfigurations(level, goldLimit, itemLimit, physicalDamageRatio, initialItems, configurations);
 			configurations.Sort((ItemConfiguration x, ItemConfiguration y) => y.GetScore(physicalDamageRatio).CompareTo(x.GetScore(physicalDamageRatio)));
-			writer.Write("Level {0}, gold limit {1}, {2} item configurations\n\n", level, goldLimit, configurations.Count);
+			if(GoldMode)
+				writer.Write("Level {0}, gold limit {1}, {2} item configurations\n\n", level, goldLimit, configurations.Count);
+			else
+				writer.Write("Level {0}, item limit {1}, {2} item configurations\n\n", level, itemLimit, configurations.Count);
 			foreach (var configuration in configurations)
 				configuration.Serialise(writer, physicalDamageRatio);
 			writer.Write("\n");
@@ -87,47 +91,69 @@ namespace LoLSimulation
 			return goldAvailable;
 		}
 
-		void DetermineItemConfigurations(int level, int goldLimit, double physicalDamageRatio, List<Item> currentConfiguration, List<ItemConfiguration> configurations)
+		void AddConfiguration(int level, List<Item> currentConfiguration, List<ItemConfiguration> configurations)
 		{
-			const int inventoryLimit = 6;
-			int slotsUsedByPotsAndWards;
-			if (level == 18)
-				slotsUsedByPotsAndWards = 0;
-			else if (level >= 12)
-				slotsUsedByPotsAndWards = 1;
-			else
-				slotsUsedByPotsAndWards = 2;
-			bool foundValidConfiguration = false;
-			if (currentConfiguration.Count + slotsUsedByPotsAndWards < inventoryLimit)
+			bool isNew = true;
+			ItemConfiguration newConfiguration = GetItemConfiguration(level, currentConfiguration);
+			foreach (var configuration in configurations)
 			{
-				int goldAvailable = GetGoldAvailable(level, goldLimit, currentConfiguration);
-				foreach (var item in Items)
+				if (configuration.HasSameItems(newConfiguration))
 				{
-					if (
-						(!item.Stackable && currentConfiguration.Contains(item)) ||
-						item.Gold > goldAvailable
-						)
-						continue;
-					List<Item> newConfiguration = new List<Item>(currentConfiguration);
-					newConfiguration.Add(item);
-					foundValidConfiguration = true;
-					DetermineItemConfigurations(level, goldLimit, physicalDamageRatio, newConfiguration, configurations);
+					isNew = false;
+					break;
 				}
 			}
-			if (!foundValidConfiguration)
+			if (isNew)
+				configurations.Add(newConfiguration);
+		}
+
+		void DetermineItemConfigurations(int level, int goldLimit, int itemLimit, double physicalDamageRatio, List<Item> currentConfiguration, List<ItemConfiguration> configurations)
+		{
+			if (GoldMode)
 			{
-				bool isNew = true;
-				ItemConfiguration newConfiguration = GetItemConfiguration(level, currentConfiguration);
-				foreach (var configuration in configurations)
+				const int inventoryLimit = 6;
+				int slotsUsedByPotsAndWards;
+				if (level == 18)
+					slotsUsedByPotsAndWards = 0;
+				else if (level >= 12)
+					slotsUsedByPotsAndWards = 1;
+				else
+					slotsUsedByPotsAndWards = 2;
+				bool foundValidConfiguration = false;
+				if (currentConfiguration.Count + slotsUsedByPotsAndWards < inventoryLimit)
 				{
-					if (configuration.HasSameItems(newConfiguration))
+					int goldAvailable = GetGoldAvailable(level, goldLimit, currentConfiguration);
+					foreach (var item in Items)
 					{
-						isNew = false;
-						break;
+						if (
+							(!item.Stackable && currentConfiguration.Contains(item)) ||
+							item.Gold > goldAvailable
+							)
+							continue;
+						List<Item> newConfiguration = new List<Item>(currentConfiguration);
+						newConfiguration.Add(item);
+						foundValidConfiguration = true;
+						DetermineItemConfigurations(level, goldLimit, itemLimit, physicalDamageRatio, newConfiguration, configurations);
 					}
 				}
-				if(isNew)
-					configurations.Add(newConfiguration);
+				if (!foundValidConfiguration)
+					AddConfiguration(level, currentConfiguration, configurations);
+			}
+			else
+			{
+				if (currentConfiguration.Count >= itemLimit)
+					AddConfiguration(level, currentConfiguration, configurations);
+				else
+				{
+					foreach (var item in Items)
+					{
+						if (!item.Stackable && currentConfiguration.Contains(item))
+							continue;
+						List<Item> newConfiguration = new List<Item>(currentConfiguration);
+						newConfiguration.Add(item);
+						DetermineItemConfigurations(level, goldLimit, itemLimit, physicalDamageRatio, newConfiguration, configurations);
+					}
+				}
 			}
 		}
 
